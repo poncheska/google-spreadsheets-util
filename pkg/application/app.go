@@ -38,6 +38,8 @@ func Run() {
 		contentEntries:  []*widget.Entry{},
 	}
 
+	view.configPathEntry.Text = "credential.json"
+
 	prBar := widget.NewProgressBarInfinite()
 	prBar.Stop()
 
@@ -83,6 +85,7 @@ func Run() {
 		go func() {
 			pdata.DoReq(execChan)
 			stopButton.Hide()
+			w.Resize(fyne.NewSize(300, 300))
 			prBar.Stop()
 			prBar.Refresh()
 		}()
@@ -120,6 +123,7 @@ func Run() {
 					view.fieldBox.Objects = view.fieldBox.Objects[:l-2]
 					view.fieldEntries = view.fieldEntries[:len(view.fieldEntries)-1]
 					view.contentEntries = view.contentEntries[:len(view.contentEntries)-1]
+					w.Resize(fyne.NewSize(300, 300))
 				}
 			}),
 		),

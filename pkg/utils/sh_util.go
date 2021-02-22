@@ -81,12 +81,19 @@ func (d *ParsedData) DoReq(ch chan int) {
 }
 
 func (d *Data) ValidateAndParse() (*ParsedData, error) {
-	client := ServiceAccount(d.ConfigPath) // Please set the json file of Service account.
+	client, err := ServiceAccount(d.ConfigPath)
+	if err != nil {
+		return &ParsedData{}, err
+	}
+
 	srv, err := sheets.New(client)
 	if err != nil {
 		return &ParsedData{}, err
 	}
 
+	if len(d.Fields) == 0 {
+		return &ParsedData{}, fmt.Errorf("empty fields")
+	}
 	var pfd []ParsedFieldData
 	for _, v := range d.Fields {
 		p, err := v.Parse()
@@ -171,10 +178,10 @@ func (fd FieldData) Parse() (ParsedFieldData, error) {
 	return ParsedFieldData{num1, num2, fd.Content}, err
 }
 
-func ServiceAccount(credentialFile string) *http.Client {
+func ServiceAccount(credentialFile string) (*http.Client, error) {
 	b, err := ioutil.ReadFile(credentialFile)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	var c = struct {
 		Email      string `json:"client_email"`
@@ -191,7 +198,7 @@ func ServiceAccount(credentialFile string) *http.Client {
 		TokenURL: google.JWTTokenURL,
 	}
 	client := config.Client(oauth2.NoContext)
-	return client
+	return client, nil
 }
 
 func doReq(values [][]interface{}, rng string, srv *sheets.Service, spreadsheetID string, ch chan int) {

@@ -94,7 +94,7 @@ func Run() {
 	w.SetContent(container.NewVBox(
 		widget.NewLabel("GOOGLE SPREADSHEETS UTIL"),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Spreadsheets URL:"),
+			widget.NewLabel("URL:"),
 			view.urlEntry,
 		),
 		container.New(layout.NewFormLayout(),

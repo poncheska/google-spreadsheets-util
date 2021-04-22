@@ -57,7 +57,7 @@ type ParsedFieldData struct {
 	Content string
 }
 
-func (d *ParsedData) DoReq(ch chan int) {
+func (d *ParsedData) DoReq(ch chan int, single bool) {
 	var values [][]interface{}
 	var row []interface{}
 
@@ -77,7 +77,7 @@ func (d *ParsedData) DoReq(ch chan int) {
 
 	log.Println(values, len(values))
 
-	doReq(values, d.RangeStr, d.GSService, d.SheetId, ch)
+	doReq(values, d.RangeStr, d.GSService, d.SheetId, ch, single)
 }
 
 func (d *Data) ValidateAndParse() (*ParsedData, error) {
@@ -103,7 +103,7 @@ func (d *Data) ValidateAndParse() (*ParsedData, error) {
 		pfd = append(pfd, p)
 	}
 
-	rngs, rng, err := parseRange(pfd)
+	rngs, rng, err := ParseRange(pfd)
 	if err != nil {
 		return &ParsedData{}, err
 	}
@@ -122,7 +122,7 @@ func (d *Data) ValidateAndParse() (*ParsedData, error) {
 	}, nil
 }
 
-func parseRange(pfd []ParsedFieldData) (string, Range, error) {
+func ParseRange(pfd []ParsedFieldData) (string, Range, error) {
 	a1 := pfd[0].Row
 	a2 := pfd[0].Col
 	b1 := pfd[0].Row
@@ -171,6 +171,9 @@ func (fd FieldData) Parse() (ParsedFieldData, error) {
 	num1 := strings.Index(asciiUppercase, p1)
 
 	num2, err := strconv.Atoi(p2)
+	if num2 < 0 {
+		return ParsedFieldData{}, fmt.Errorf("parse: negative number")
+	}
 	if err != nil {
 		return ParsedFieldData{}, err
 	}
@@ -201,7 +204,7 @@ func ServiceAccount(credentialFile string) (*http.Client, error) {
 	return client, nil
 }
 
-func doReq(values [][]interface{}, rng string, srv *sheets.Service, spreadsheetID string, ch chan int) {
+func doReq(values [][]interface{}, rng string, srv *sheets.Service, spreadsheetID string, ch chan int, single bool) {
 	for {
 		select {
 		case <-ch:
@@ -212,17 +215,26 @@ func doReq(values [][]interface{}, rng string, srv *sheets.Service, spreadsheetI
 		sheetValues, err := srv.Spreadsheets.Values.Get(spreadsheetID, rng).Do()
 		if err != nil {
 			log.Println(err.Error())
+			if single {
+				break
+			}
 			time.Sleep(time.Second)
 			continue
 		}
 		if sheetValues == nil {
 			log.Println(rng + " NIL VALUES")
+			if single {
+				break
+			}
 			time.Sleep(time.Second)
 			continue
 		}
 		vls := sheetValues.Values
 		if reflect.DeepEqual(values, vls) {
 			log.Println(rng + " EQUALS")
+			if single {
+				break
+			}
 			time.Sleep(time.Second)
 			continue
 		}
@@ -237,10 +249,15 @@ func doReq(values [][]interface{}, rng string, srv *sheets.Service, spreadsheetI
 		_, err = srv.Spreadsheets.Values.BatchUpdate(spreadsheetID, rb).Context(ctx).Do()
 		if err == nil {
 			log.Println(rng + " INSERT")
+			if single {
+				break
+			}
 			time.Sleep(time.Second)
-			//break
 		} else {
 			log.Println(err.Error())
+			if single {
+				break
+			}
 			time.Sleep(time.Second)
 		}
 	}

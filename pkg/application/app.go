@@ -51,7 +51,7 @@ func Run() {
 	})
 	stopButton.Hide()
 
-	execButton := widget.NewButton("EXECUTE", func() {
+	loopButton := widget.NewButton("START LOOP", func() {
 		if isExec {
 			return
 		}
@@ -83,11 +83,53 @@ func Run() {
 		isExec = true
 		stopButton.Show()
 		go func() {
-			pdata.DoReq(execChan)
+			pdata.DoReq(execChan, false)
 			stopButton.Hide()
 			w.Resize(fyne.NewSize(300, 300))
 			prBar.Stop()
 			prBar.Refresh()
+			isExec = false
+		}()
+	})
+
+	singleReqButton := widget.NewButton("SINGLE REQUEST", func() {
+		if isExec {
+			return
+		}
+		var flds []utils.FieldData
+		if len(view.contentEntries) != len(view.fieldEntries) {
+			return
+		}
+		l := len(view.fieldEntries)
+		for i := 0; i < l; i++ {
+			flds = append(flds, utils.FieldData{
+				Field:   strings.Trim(view.fieldEntries[i].Text, " "),
+				Content: strings.Trim(view.contentEntries[i].Text, " "),
+			})
+		}
+		data := &utils.Data{
+			URL:        strings.Trim(view.urlEntry.Text, " "),
+			ConfigPath: strings.Trim(view.configPathEntry.Text, " "),
+			SheetName:  strings.Trim(view.sheetEntry.Text, " "),
+			Fields:     flds,
+		}
+		log.Println(data)
+		pdata, err := data.ValidateAndParse()
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		log.Println(pdata)
+		prBar.Start()
+		isExec = true
+		stopButton.Show()
+		go func() {
+			pdata.DoReq(execChan, true)
+			stopButton.Hide()
+			w.Resize(fyne.NewSize(300, 300))
+			prBar.Stop()
+			prBar.Refresh()
+			isExec = false
 		}()
 	})
 
@@ -128,7 +170,8 @@ func Run() {
 			}),
 		),
 		prBar,
-		execButton,
+		loopButton,
+		singleReqButton,
 		stopButton,
 	))
 

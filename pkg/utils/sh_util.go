@@ -61,17 +61,17 @@ func (d *ParsedData) DoReq(ch chan int, single bool) {
 	var values [][]interface{}
 	var row []interface{}
 
-	for i := 0; i < d.x2 - d.x1 + 1; i++ {
+	for i := 0; i < d.x2-d.x1+1; i++ {
 		row = append(row, nil)
 	}
 
-	for i := 0; i < d.y2 - d.y1 + 1; i++ {
-		tmp := make([]interface{}, d.x2 - d.x1 + 1)
+	for i := 0; i < d.y2-d.y1+1; i++ {
+		tmp := make([]interface{}, d.x2-d.x1+1)
 		copy(tmp, row)
 		values = append(values, tmp)
 	}
 
-	for _,v := range d.ParsedFields{
+	for _, v := range d.ParsedFields {
 		values[v.Col-d.y1][v.Row-d.x1] = v.Content
 	}
 
@@ -158,7 +158,7 @@ func ParseSheetId(url string) (string, error) {
 }
 
 func (fd FieldData) Parse() (ParsedFieldData, error) {
-	if fd.Field == "" || fd.Content == "" {
+	if len(fd.Field) < 2 || fd.Content == "" {
 		return ParsedFieldData{}, fmt.Errorf("there is empty field")
 	}
 

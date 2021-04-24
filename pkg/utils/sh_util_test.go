@@ -50,7 +50,7 @@ func TestParseRange(t *testing.T) {
 		ok bool
 	}{
 		{
-			"correct data",
+			"correct data: few fields",
 			[]ParsedFieldData{
 				{Row: 2, Col: 1, Content: "kek1"},
 				{Row: 6, Col: 4, Content: "kek2"},
@@ -59,7 +59,18 @@ func TestParseRange(t *testing.T) {
 			struct {
 				rngStr string
 				rng    Range
-			}{rngStr: "C1:H4", rng: Range{2,1, 7, 4} },
+			}{rngStr: "C1:H4", rng: Range{2, 1, 7, 4}},
+			true,
+		},
+		{
+			"correct data: single field",
+			[]ParsedFieldData{
+				{Row: 2, Col: 1, Content: "kek1"},
+			},
+			struct {
+				rngStr string
+				rng    Range
+			}{rngStr: "C1:C1", rng: Range{2, 1, 2, 1}},
 			true,
 		},
 		{
@@ -83,6 +94,58 @@ func TestParseRange(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, test.res.rng, rng)
 				assert.Equal(t, test.res.rngStr, rngStr)
+			} else {
+				assert.NotNil(t, err)
+			}
+		})
+	}
+}
+
+func TestFieldData_Parse(t *testing.T) {
+	tests := []struct {
+		name string
+		in   FieldData
+		res  ParsedFieldData
+		ok   bool
+	}{
+		{
+			"correct data",
+			FieldData{"A1", "content"},
+			ParsedFieldData{0, 1, "content"},
+			true,
+		},
+		{
+			"incorrect data: incorrect field format 1",
+			FieldData{"A", "content"},
+			ParsedFieldData{},
+			false,
+		},
+		{
+			"incorrect data: incorrect field format 2",
+			FieldData{"AA", "content"},
+			ParsedFieldData{},
+			false,
+		},
+		{
+			"incorrect data: incorrect field format 3",
+			FieldData{"11", "content"},
+			ParsedFieldData{},
+			false,
+		},
+		{
+			"incorrect data: negative number",
+			FieldData{"A-1", "content"},
+			ParsedFieldData{},
+			false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, err := test.in.Parse()
+			if test.ok {
+				assert.Nil(t, err)
+				assert.Equal(t, test.res, res)
 			} else {
 				assert.NotNil(t, err)
 			}
